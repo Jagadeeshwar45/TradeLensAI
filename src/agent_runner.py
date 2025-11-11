@@ -77,30 +77,38 @@ def build_system_message(table_schemas):
 
 from langchain.agents import create_react_agent, AgentExecutor
 
+from pathlib import Path
+import subprocess
+import os
+
 def create_agent():
     """Create a ReAct-style multimodal agent with proper conversation memory, schema awareness, and persistence."""
-
-    base_dir = Path(__file__).resolve().parent.parent  # points to /mount/src/tradelensai
+    
+    base_dir = Path(__file__).resolve().parent.parent  # project root
     index_dir = base_dir / "data" / "faiss_index"
     index_path = index_dir / "faiss.index"
     meta_path = index_dir / "docs_meta.pkl"
+    build_script = base_dir / "src" / "build_vectorstore.py"
 
-    # Auto-build FAISS index if missing
+    # ✅ Ensure directories exist
+    index_dir.mkdir(parents=True, exist_ok=True)
+
+    # 🧠 Lazy-build FAISS index if missing
     if not index_path.exists() or not meta_path.exists():
-        print("⚙️ FAISS index not found. Building via build_vectorstore.py ...")
-        index_dir.mkdir(parents=True, exist_ok=True)  # ✅ ensure folder exists
-
+        print("⚙️ FAISS index not found. Building now (this may take a few minutes)...")
         try:
-            # ✅ Use absolute path so Streamlit knows where to run it
-            build_script = base_dir / "src" / "build_vectorstore.py"
-            subprocess.run(["python", str(build_script)], cwd=base_dir, check=True)
+            subprocess.run(
+                ["python", str(build_script)],
+                cwd=base_dir,
+                check=True
+            )
             print("✅ FAISS index successfully created.")
         except subprocess.CalledProcessError as e:
-            print(f"❌ Failed to build FAISS index: {e}")
-            raise RuntimeError("FAISS index build failed.")
-        
-    db = DuckDBRunner(PARQUET_DIR)
-    retriever = FaissRetriever(FAISS_DIR)
+            print(f"❌ Failed to build FAISS index automatically: {e}")
+            raise RuntimeError("FAISS index build failed on deployment.")
+
+    db = DuckDBRunner(str(base_dir / "data" / "parquet"))
+    retriever = FaissRetriever(str(index_dir))
 
     # Register available tables
     table_list = db.conn.execute("SHOW TABLES;").fetchdf()["name"].tolist()

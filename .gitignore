@@ -1,0 +1,24 @@
+# Virtual environments
+ass.venv/
+venv/
+.env
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Data & models
+data/*.pkl
+data/*.bin
+data/faiss_index/
+data/*.parquet
+
+# Logs / temp
+*.log
+*.tmp
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store

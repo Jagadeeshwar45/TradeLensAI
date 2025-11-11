@@ -14,6 +14,8 @@ from langchain.memory import ConversationBufferMemory
 from agent_tools import DuckDBRunner, FaissRetriever, df_to_plot_png
 from tavily import TavilyClient
 from googletrans import Translator
+from pathlib import Path
+import subprocess
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -77,6 +79,11 @@ from langchain.agents import create_react_agent, AgentExecutor
 
 def create_agent():
     """Create a ReAct-style multimodal agent with proper conversation memory, schema awareness, and persistence."""
+    FAISS_DIR = "./data/faiss_index"
+    if not Path(f"{FAISS_DIR}/faiss.index").exists():
+        print("⚠️ FAISS index missing — building now...")
+        subprocess.run(["python", "src/build_vectorstore.py"], check=True)
+        
     db = DuckDBRunner(PARQUET_DIR)
     retriever = FaissRetriever(FAISS_DIR)
 

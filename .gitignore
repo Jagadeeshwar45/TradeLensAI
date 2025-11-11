@@ -1,25 +1,28 @@
-# --- Virtual environments ---
+# Virtual environments
 ass.venv/
 venv/
 .env
 
-# --- Python cache ---
+# Data and models
+data/faiss_index/
+data/*.parquet
+data/*.pkl
+data/*.bin
+
+# Python cache
 __pycache__/
 *.pyc
 *.pyo
+*.pyd
 
-# --- IDE / OS files ---
-.vscode/
-.idea/
-.DS_Store
-Thumbs.db
-
-# --- Logs / temp files ---
+# Logs / temp
 *.log
 *.tmp
 *.bak
 *.swp
 
-# Ignore FAISS and vectorstore artifacts
-data/faiss_index/
-
+# IDE and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

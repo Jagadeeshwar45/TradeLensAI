@@ -3,20 +3,14 @@ ass.venv/
 venv/
 .env
 
+# Data and models
+# (Include faiss_index in Git LFS — do NOT ignore it)
+!data/faiss_index/
+data/*.parquet
+data/*.pkl
+data/*.bin
+data/conversation_memory.pkl
+
 # Python cache
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
-
-# Logs / temp
-*.log
-*.tmp
-*.bak
-*.swp
-
-# IDE and OS
-.vscode/
-.idea/
-.DS_Store
-Thumbs.db

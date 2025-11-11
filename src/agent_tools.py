@@ -1,3 +1,4 @@
+
 import duckdb
 import pandas as pd
 import os
@@ -30,7 +31,6 @@ class DuckDBRunner:
         return self.conn.execute(sql).df()
 
 class FaissRetriever:
-    class FaissRetriever:
     def __init__(self, index_dir="./data/faiss_index", model_name="all-MiniLM-L6-v2"):
         index_dir = Path(index_dir).resolve()
         index_path = index_dir / "faiss.index"

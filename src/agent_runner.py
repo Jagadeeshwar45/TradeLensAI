@@ -1,3 +1,4 @@
+
 import os
 import re
 import difflib
@@ -14,8 +15,6 @@ from langchain.memory import ConversationBufferMemory
 from agent_tools import DuckDBRunner, FaissRetriever, df_to_plot_png
 from tavily import TavilyClient
 from googletrans import Translator
-from pathlib import Path
-import requests
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -77,45 +76,10 @@ def build_system_message(table_schemas):
 
 from langchain.agents import create_react_agent, AgentExecutor
 
-from pathlib import Path
-import subprocess
-import os
-
-import gdown
-
 def create_agent():
-    base_dir = Path(__file__).resolve().parent.parent
-    index_dir = (base_dir / "data" / "faiss_index").resolve()
-    index_dir.mkdir(parents=True, exist_ok=True)
-    index_path = index_dir / "faiss.index"
-    meta_path  = index_dir / "docs_meta.pkl"
-    print(f"🔍 Using FAISS directory: {index_dir}")
-
-    # --- Google Drive file IDs ---
-    FAISS_INDEX_ID = "1pOx2dcv7i7xR3BSs9r8GLj-UrXd13f3z"
-    FAISS_META_ID  = "1-MqxsGV6-nC22lWcnywArM61DEJGW_l5"
-
-    # --- Download if missing ---
-    if not index_path.exists() or not meta_path.exists():
-        print("⬇️ Downloading FAISS index from Google Drive...")
-        try:
-            gdown.download(f"https://drive.google.com/uc?id={FAISS_INDEX_ID}", str(index_path), quiet=False)
-            gdown.download(f"https://drive.google.com/uc?id={FAISS_META_ID}", str(meta_path), quiet=False)
-
-            # Sanity check
-            if index_path.stat().st_size < 50000 or meta_path.stat().st_size < 5000:
-                raise RuntimeError("Downloaded files too small — likely Google Drive blocked direct download.")
-
-            print("✅ FAISS index downloaded successfully.")
-        except Exception as e:
-            print(f"❌ Failed to download FAISS index: {e}")
-            raise RuntimeError("Could not fetch FAISS index from Drive.")
-
-
-    db = DuckDBRunner(str(base_dir / "data" / "parquet"))
-    abs_index_dir = index_dir.resolve()
-    print(f"🔍 Loading FAISS index from: {abs_index_dir}")
-    retriever = FaissRetriever(str(abs_index_dir))
+    """Create a ReAct-style multimodal agent with proper conversation memory, schema awareness, and persistence."""
+    db = DuckDBRunner(PARQUET_DIR)
+    retriever = FaissRetriever(FAISS_DIR)
 
     # Register available tables
     table_list = db.conn.execute("SHOW TABLES;").fetchdf()["name"].tolist()

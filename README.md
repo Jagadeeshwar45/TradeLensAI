@@ -42,8 +42,8 @@ project-root/
 ⚙️ Setup & Installation  
 **1️⃣ Clone the Repository**
 ```bash
-git clone https://github.com/Jagadeeshwar45/CommerceGenAI.git
-cd CommerceGenAI
+git clone https://github.com/Jagadeeshwar45/TradeLensAI.git
+cd TradeLensAI
 ```
 
 **2️⃣ Create a Virtual Environment**

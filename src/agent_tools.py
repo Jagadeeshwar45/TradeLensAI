@@ -30,15 +30,14 @@ class DuckDBRunner:
         return self.conn.execute(sql).df()
 
 class FaissRetriever:
+    class FaissRetriever:
     def __init__(self, index_dir="./data/faiss_index", model_name="all-MiniLM-L6-v2"):
-        # 🔧 Always use absolute path
         index_dir = Path(index_dir).resolve()
         index_path = index_dir / "faiss.index"
         meta_path = index_dir / "docs_meta.pkl"
 
         self.model = SentenceTransformer(model_name)
 
-        # ✅ Verify existence before trying to load
         if not index_path.exists() or not meta_path.exists():
             print(f"⚠️ FAISS files missing at {index_dir}.")
             print(f"Expected:\n - {index_path}\n - {meta_path}")
@@ -51,8 +50,6 @@ class FaissRetriever:
             self.index = faiss.read_index(str(index_path))
             with open(meta_path, "rb") as f:
                 self.docs = pickle.load(f)
-
-            # sanity check
             if len(self.docs) == 0:
                 print("⚠️ Loaded FAISS index but metadata is empty.")
         except Exception as e:

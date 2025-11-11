@@ -79,15 +79,17 @@ from langchain.agents import create_react_agent, AgentExecutor
 
 def create_agent():
     """Create a ReAct-style multimodal agent with proper conversation memory, schema awareness, and persistence."""
-    os.makedirs(FAISS_DIR, exist_ok=True)
-    os.makedirs(PARQUET_DIR, exist_ok=True)
-    if not Path(f"{FAISS_DIR}/faiss.index").exists():
+    index_path = Path("./data/faiss_index/faiss.index")
+    meta_path = Path("./data/faiss_index/docs_meta.pkl")
+    
+    if not index_path.exists() or not meta_path.exists():
+        print("⚙️ FAISS index not found. Building via build_vectorstore.py ...")
         try:
-            import src.build_vectorstore as build
-            print("⚙️ Building FAISS index inside Streamlit runtime...")
-            build.build_index()
-        except Exception as e:
-            print("⚠️ FAISS build failed:", e)
+            subprocess.run(["python", "src/build_vectorstore.py"], check=True)
+            print("✅ FAISS index successfully created.")
+        except subprocess.CalledProcessError as e:
+            print(f"❌ Failed to build FAISS index: {e}")
+            raise RuntimeError("FAISS index build failed.")
         
     db = DuckDBRunner(PARQUET_DIR)
     retriever = FaissRetriever(FAISS_DIR)

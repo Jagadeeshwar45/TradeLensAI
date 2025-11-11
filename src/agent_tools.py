@@ -34,14 +34,31 @@ class FaissRetriever:
         index_path = Path(index_dir) / "faiss.index"
         meta_path = Path(index_dir) / "docs_meta.pkl"
         self.model = SentenceTransformer(model_name)
-        self.index = faiss.read_index(str(index_path))
-        with open(meta_path, "rb") as f:
-            self.docs = pickle.load(f)
+
+        # ✅ Gracefully handle missing FAISS files
+        if not index_path.exists() or not meta_path.exists():
+            print("⚠️ FAISS index not found. It will need to be built by the main agent.")
+            self.index = None
+            self.docs = []
+            return
+
+        try:
+            self.index = faiss.read_index(str(index_path))
+            with open(meta_path, "rb") as f:
+                self.docs = pickle.load(f)
+        except Exception as e:
+            print(f"❌ Failed to load FAISS index: {e}")
+            self.index = None
+            self.docs = []
 
     def retrieve(self, query, top_k=5):
+        if self.index is None:
+            return [{"text": "FAISS index not available. Please rebuild it.", "meta": {}}]
         emb = self.model.encode([query], convert_to_numpy=True)
         faiss.normalize_L2(emb)
         D, I = self.index.search(emb, top_k)
+        return [{"text": self.docs[i][0], "meta": self.docs[i][1]} for i in I[0]]
+
         return [{"text": self.docs[i][0], "meta": self.docs[i][1]} for i in I[0]]
 
 def df_to_plot_png(df, title="Chart"):

@@ -18,3 +18,4 @@ tabulate
 wikipedia
 tavily
 googletrans
+gdown==5.2.0

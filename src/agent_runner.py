@@ -85,11 +85,11 @@ import gdown
 
 def create_agent():
     base_dir = Path(__file__).resolve().parent.parent
-    index_dir = base_dir / "data" / "faiss_index"
+    index_dir = (base_dir / "data" / "faiss_index").resolve()
     index_dir.mkdir(parents=True, exist_ok=True)
-
     index_path = index_dir / "faiss.index"
     meta_path  = index_dir / "docs_meta.pkl"
+    print(f"🔍 Using FAISS directory: {index_dir}")
 
     # --- Google Drive file IDs ---
     FAISS_INDEX_ID = "1pOx2dcv7i7xR3BSs9r8GLj-UrXd13f3z"

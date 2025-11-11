@@ -20,4 +20,6 @@ Thumbs.db
 *.bak
 *.swp
 
+# Ignore FAISS and vectorstore artifacts
+data/faiss_index/
 

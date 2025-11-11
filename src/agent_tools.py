@@ -1,4 +1,4 @@
-
+# --- Make sure these imports are at the top of agent_tools.py ---
 import duckdb
 import pandas as pd
 import os
@@ -10,6 +10,10 @@ import io
 import base64
 from pathlib import Path
 import numpy as np
+import gdown  # <-- Import gdown
+import streamlit as st # <-- Import streamlit
+
+# -----------------------------------------------------------------
 
 class DuckDBRunner:
     def __init__(self, parquet_dir="./data/parquet"):
@@ -30,20 +34,48 @@ class DuckDBRunner:
             raise ValueError("Unsafe SQL detected.")
         return self.conn.execute(sql).df()
 
+#
+# --- THIS IS THE MODIFIED CLASS ---
+#
 class FaissRetriever:
     def __init__(self, index_dir="./data/faiss_index", model_name="all-MiniLM-L6-v2"):
+        
+        # !!! —- PASTE YOUR DIRECT-DOWNLOAD LINKS HERE --- !!!
+        FAISS_INDEX_URL = "https://drive.google.com/uc?id=1pOx2dcv7i7xR3BSs9r8GLj-UrXd13f3z"
+        DOCS_META_URL = "https://drive.google.com/uc?id=1-MqxsGV6-nC22lWcnywArM61DEJGW_l5"
+
         index_dir = Path(index_dir).resolve()
         index_path = index_dir / "faiss.index"
         meta_path = index_dir / "docs_meta.pkl"
 
-        self.model = SentenceTransformer(model_name)
-
+        # --- Download-on-boot logic using gdown ---
         if not index_path.exists() or not meta_path.exists():
-            print(f"⚠️ FAISS files missing at {index_dir}.")
-            print(f"Expected:\n - {index_path}\n - {meta_path}")
-            self.index = None
-            self.docs = []
-            return
+            print(f"⚠️ FAISS files missing. Attempting to download from Google Drive...")
+            os.makedirs(index_dir, exist_ok=True) 
+            
+            with st.spinner(f"Downloading FAISS index (this may take a moment)..."):
+                try:
+                    # Download faiss.index
+                    if not index_path.exists():
+                        print(f"Downloading faiss.index...")
+                        gdown.download(url=FAISS_INDEX_URL, output=str(index_path), quiet=False)
+                        print("✅ Downloaded faiss.index.")
+
+                    # Download docs_meta.pkl
+                    if not meta_path.exists():
+                        print(f"Downloading docs_meta.pkl...")
+                        gdown.download(url=DOCS_META_URL, output=str(meta_path), quiet=False)
+                        print("✅ Downloaded docs_meta.pkl.")
+                        
+                except Exception as e:
+                    print(f"❌ Failed to download files from Google Drive: {e}")
+                    st.error(f"Failed to download required index files: {e}")
+                    self.index = None
+                    self.docs = []
+                    return
+        # --- End of new logic ---
+
+        self.model = SentenceTransformer(model_name)
 
         try:
             print(f"✅ Loading FAISS index from {index_path}")
@@ -72,6 +104,7 @@ class FaissRetriever:
 
 
 def df_to_plot_png(df, title="Chart"):
+    # ... (this function remains the same) ...
     plt.figure(figsize=(8,4))
     numeric_cols = df.select_dtypes(include='number').columns
     if len(numeric_cols) >= 2:

@@ -81,6 +81,8 @@ from pathlib import Path
 import subprocess
 import os
 
+import gdown
+
 def create_agent():
     base_dir = Path(__file__).resolve().parent.parent
     index_dir = base_dir / "data" / "faiss_index"
@@ -89,23 +91,26 @@ def create_agent():
     index_path = index_dir / "faiss.index"
     meta_path  = index_dir / "docs_meta.pkl"
 
-    # --- Google Drive links (direct download form) ---
-    FAISS_INDEX_URL = "https://drive.google.com/uc?export=download&id=1pOx2dcv7i7xR3BSs9r8GLj-UrXd13f3z"
-    FAISS_META_URL  = "https://drive.google.com/uc?export=download&id=1-MqxsGV6-nC22lWcnywArM61DEJGW_l5"
+    # --- Google Drive file IDs ---
+    FAISS_INDEX_ID = "1pOx2dcv7i7xR3BSs9r8GLj-UrXd13f3z"
+    FAISS_META_ID  = "1-MqxsGV6-nC22lWcnywArM61DEJGW_l5"
 
     # --- Download if missing ---
     if not index_path.exists() or not meta_path.exists():
         print("⬇️ Downloading FAISS index from Google Drive...")
         try:
-            for url, path in [(FAISS_INDEX_URL, index_path), (FAISS_META_URL, meta_path)]:
-                r = requests.get(url, allow_redirects=True)
-                r.raise_for_status()
-                with open(path, "wb") as f:
-                    f.write(r.content)
+            gdown.download(f"https://drive.google.com/uc?id={FAISS_INDEX_ID}", str(index_path), quiet=False)
+            gdown.download(f"https://drive.google.com/uc?id={FAISS_META_ID}", str(meta_path), quiet=False)
+
+            # Sanity check
+            if index_path.stat().st_size < 50000 or meta_path.stat().st_size < 5000:
+                raise RuntimeError("Downloaded files too small — likely Google Drive blocked direct download.")
+
             print("✅ FAISS index downloaded successfully.")
         except Exception as e:
             print(f"❌ Failed to download FAISS index: {e}")
             raise RuntimeError("Could not fetch FAISS index from Drive.")
+
 
     db = DuckDBRunner(str(base_dir / "data" / "parquet"))
     retriever = FaissRetriever(str(index_dir))

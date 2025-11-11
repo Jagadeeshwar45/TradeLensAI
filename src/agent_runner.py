@@ -90,8 +90,8 @@ def create_agent():
     meta_path  = index_dir / "docs_meta.pkl"
 
     # --- Google Drive links (direct download form) ---
-    FAISS_INDEX_URL = "https://drive.google.com/file/d/1pOx2dcv7i7xR3BSs9r8GLj-UrXd13f3z/view?usp=sharing"
-    FAISS_META_URL  = "https://drive.google.com/file/d/1-MqxsGV6-nC22lWcnywArM61DEJGW_l5/view?usp=sharing"
+    FAISS_INDEX_URL = "https://drive.google.com/uc?export=download&id=1pOx2dcv7i7xR3BSs9r8GLj-UrXd13f3z"
+    FAISS_META_URL  = "https://drive.google.com/uc?export=download&id=1-MqxsGV6-nC22lWcnywArM61DEJGW_l5"
 
     # --- Download if missing ---
     if not index_path.exists() or not meta_path.exists():

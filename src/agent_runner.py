@@ -113,7 +113,9 @@ def create_agent():
 
 
     db = DuckDBRunner(str(base_dir / "data" / "parquet"))
-    retriever = FaissRetriever(str(index_dir))
+    abs_index_dir = index_dir.resolve()
+    print(f"🔍 Loading FAISS index from: {abs_index_dir}")
+    retriever = FaissRetriever(str(abs_index_dir))
 
     # Register available tables
     table_list = db.conn.execute("SHOW TABLES;").fetchdf()["name"].tolist()

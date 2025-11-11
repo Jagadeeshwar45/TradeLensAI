@@ -79,13 +79,21 @@ from langchain.agents import create_react_agent, AgentExecutor
 
 def create_agent():
     """Create a ReAct-style multimodal agent with proper conversation memory, schema awareness, and persistence."""
-    index_path = Path("./data/faiss_index/faiss.index")
-    meta_path = Path("./data/faiss_index/docs_meta.pkl")
-    
+
+    base_dir = Path(__file__).resolve().parent.parent  # points to /mount/src/tradelensai
+    index_dir = base_dir / "data" / "faiss_index"
+    index_path = index_dir / "faiss.index"
+    meta_path = index_dir / "docs_meta.pkl"
+
+    # Auto-build FAISS index if missing
     if not index_path.exists() or not meta_path.exists():
         print("⚙️ FAISS index not found. Building via build_vectorstore.py ...")
+        index_dir.mkdir(parents=True, exist_ok=True)  # ✅ ensure folder exists
+
         try:
-            subprocess.run(["python", "src/build_vectorstore.py"], check=True)
+            # ✅ Use absolute path so Streamlit knows where to run it
+            build_script = base_dir / "src" / "build_vectorstore.py"
+            subprocess.run(["python", str(build_script)], cwd=base_dir, check=True)
             print("✅ FAISS index successfully created.")
         except subprocess.CalledProcessError as e:
             print(f"❌ Failed to build FAISS index: {e}")

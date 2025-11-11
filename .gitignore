@@ -1,24 +1,23 @@
-# Virtual environments
+# --- Virtual environments ---
 ass.venv/
 venv/
-.env
+.env/
 
-# Python cache
+# --- Python cache ---
 __pycache__/
 *.pyc
 *.pyo
 
-# Data & models
-data/*.pkl
-data/*.bin
-data/faiss_index/
-data/*.parquet
-
-# Logs / temp
-*.log
-*.tmp
-
-# IDE / OS
+# --- IDE / OS files ---
 .vscode/
 .idea/
 .DS_Store
+Thumbs.db
+
+# --- Logs / temp files ---
+*.log
+*.tmp
+*.bak
+*.swp
+
+

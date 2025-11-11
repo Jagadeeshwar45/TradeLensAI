@@ -1,1 +1,0 @@
-streamlit run c:\Users\JAGADEESH\OneDrive\Desktop\Assesment\src\streamlit_app.py

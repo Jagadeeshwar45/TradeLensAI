@@ -3,12 +3,6 @@ ass.venv/
 venv/
 .env
 
-# Data and models
-data/faiss_index/
-data/*.parquet
-data/*.pkl
-data/*.bin
-
 # Python cache
 __pycache__/
 *.pyc

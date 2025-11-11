@@ -15,7 +15,7 @@ from agent_tools import DuckDBRunner, FaissRetriever, df_to_plot_png
 from tavily import TavilyClient
 from googletrans import Translator
 from pathlib import Path
-import subprocess
+import requests
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -82,30 +82,30 @@ import subprocess
 import os
 
 def create_agent():
-    """Create a ReAct-style multimodal agent with proper conversation memory, schema awareness, and persistence."""
-    
-    base_dir = Path(__file__).resolve().parent.parent  # project root
+    base_dir = Path(__file__).resolve().parent.parent
     index_dir = base_dir / "data" / "faiss_index"
-    index_path = index_dir / "faiss.index"
-    meta_path = index_dir / "docs_meta.pkl"
-    build_script = base_dir / "src" / "build_vectorstore.py"
-
-    # ✅ Ensure directories exist
     index_dir.mkdir(parents=True, exist_ok=True)
 
-    # 🧠 Lazy-build FAISS index if missing
+    index_path = index_dir / "faiss.index"
+    meta_path  = index_dir / "docs_meta.pkl"
+
+    # --- Google Drive links (direct download form) ---
+    FAISS_INDEX_URL = "https://drive.google.com/file/d/1pOx2dcv7i7xR3BSs9r8GLj-UrXd13f3z/view?usp=sharing"
+    FAISS_META_URL  = "https://drive.google.com/file/d/1-MqxsGV6-nC22lWcnywArM61DEJGW_l5/view?usp=sharing"
+
+    # --- Download if missing ---
     if not index_path.exists() or not meta_path.exists():
-        print("⚙️ FAISS index not found. Building now (this may take a few minutes)...")
+        print("⬇️ Downloading FAISS index from Google Drive...")
         try:
-            subprocess.run(
-                ["python", str(build_script)],
-                cwd=base_dir,
-                check=True
-            )
-            print("✅ FAISS index successfully created.")
-        except subprocess.CalledProcessError as e:
-            print(f"❌ Failed to build FAISS index automatically: {e}")
-            raise RuntimeError("FAISS index build failed on deployment.")
+            for url, path in [(FAISS_INDEX_URL, index_path), (FAISS_META_URL, meta_path)]:
+                r = requests.get(url, allow_redirects=True)
+                r.raise_for_status()
+                with open(path, "wb") as f:
+                    f.write(r.content)
+            print("✅ FAISS index downloaded successfully.")
+        except Exception as e:
+            print(f"❌ Failed to download FAISS index: {e}")
+            raise RuntimeError("Could not fetch FAISS index from Drive.")
 
     db = DuckDBRunner(str(base_dir / "data" / "parquet"))
     retriever = FaissRetriever(str(index_dir))

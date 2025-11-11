@@ -79,10 +79,15 @@ from langchain.agents import create_react_agent, AgentExecutor
 
 def create_agent():
     """Create a ReAct-style multimodal agent with proper conversation memory, schema awareness, and persistence."""
-    FAISS_DIR = "./data/faiss_index"
+    os.makedirs(FAISS_DIR, exist_ok=True)
+    os.makedirs(PARQUET_DIR, exist_ok=True)
     if not Path(f"{FAISS_DIR}/faiss.index").exists():
-        print("⚠️ FAISS index missing — building now...")
-        subprocess.run(["python", "src/build_vectorstore.py"], check=True)
+        try:
+            import src.build_vectorstore as build
+            print("⚙️ Building FAISS index inside Streamlit runtime...")
+            build.build_index()
+        except Exception as e:
+            print("⚠️ FAISS build failed:", e)
         
     db = DuckDBRunner(PARQUET_DIR)
     retriever = FaissRetriever(FAISS_DIR)

@@ -126,4 +126,3 @@ A weekly GMV trend chart is auto-rendered in Streamlit from the `kpi_weekly.parq
 | Data Processing     | Pandas / NumPy                          |
 | Web Search          | Tavily API / Wikipedia                  |
 | Translation         | Google Translate API                    |
-

@@ -94,9 +94,11 @@ streamlit run src/streamlit_app.py
 Then open your browser (default: http://localhost:8501).  
 
 
+
 🌟 Live Demo
 
 [![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://jagadeeshwar45-tradelensai-srcstreamlit-app-mhm8sd.streamlit.app/)  
+
 
 
 🧩 **Example Queries**

@@ -10,8 +10,8 @@ import io
 import base64
 from pathlib import Path
 import numpy as np
-import gdown  # <-- Import gdown
-import streamlit as st # <-- Import streamlit
+import gdown
+import streamlit as st
 import time
 import subprocess
 import sys
@@ -39,17 +39,16 @@ class DuckDBRunner:
         return self.conn.execute(sql).df()
 
 
+# -----------------------------------------------------------------
+# ✅ Clean version — hides logs from Streamlit UI but keeps backend logging
+# -----------------------------------------------------------------
 class FaissRetriever:
-    """
-    Minimal: download two files from Google Drive using gdown, then load FAISS index.
-    Expects DRIVE_INDEX_ID and DRIVE_META_ID to be accessible via "Anyone with link".
-    Writes a debug log to data/faiss_index/download_debug.log for inspection.
-    """
+    """FAISS retriever with hidden Streamlit logs (clean UI)."""
+
     DRIVE_INDEX_ID = "1pOx2dcv7i7xR3BSs9r8GLj-UrXd13f3z"
     DRIVE_META_ID  = "1-MqxsGV6-nC22lWcnywArM61DEJGW_l5"
 
-    # tune these thresholds for sanity checks
-    MIN_INDEX_BYTES = 100_000        # 100 KB minimum (raise this if your index is bigger — which it is)
+    MIN_INDEX_BYTES = 100_000
     MIN_META_BYTES  = 1_000
 
     def __init__(self, index_dir="./data/faiss_index", model_name="all-MiniLM-L6-v2"):
@@ -63,133 +62,90 @@ class FaissRetriever:
         self.index = None
         self.docs = []
 
-        # helper
-        def dbg(msg):
-            ts = time.strftime("%Y-%m-%d %H:%M:%S")
-            line = f"[{ts}] {msg}"
-            self.debug_lines.append(line)
-            try:
-                st.write(line)
-            except Exception:
-                pass
-            logging.info(line)
+        # initialize file logger (silent in UI)
+        log_path = self.index_dir / "download_debug.log"
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(asctime)s [%(levelname)s] %(message)s",
+            handlers=[
+                logging.FileHandler(log_path, mode="a", encoding="utf-8"),
+                logging.StreamHandler(sys.stdout)
+            ]
+        )
+        logging.info("=== Starting FaissRetriever initialization ===")
+        logging.info(f"Index dir: {self.index_dir}")
 
-        dbg(f"Starting FaissRetriever init. index_dir={self.index_dir}")
-
-        # 1) ensure gdown available
         try:
             import gdown
             self.gdown = gdown
-            dbg("gdown import OK")
+            logging.info("gdown import OK")
         except Exception as e:
             self.gdown = None
-            dbg(f"gdown not available: {e}")
-            self._flush_debug()
-            # continue — we'll show a clear error below if download required
+            logging.error(f"gdown not available: {e}")
+            self._set_failed("gdown not installed; cannot download FAISS files at runtime.")
+            return
 
-        # 2) if files missing, try to download using gdown
+        # Check files
         need_download = (not self.index_path.exists()) or (not self.meta_path.exists())
-        dbg(f"Files exist? index:{self.index_path.exists()} meta:{self.meta_path.exists()}")
+        logging.info(f"Files exist? index:{self.index_path.exists()} meta:{self.meta_path.exists()}")
 
         if need_download:
-            dbg("FAISS files missing. Attempting gdown download.")
+            logging.info("FAISS files missing. Attempting gdown download.")
             if self.gdown is None:
-                dbg("Cannot download: gdown not installed in environment.")
-                self._flush_debug()
-                self._set_failed("gdown not installed; cannot download FAISS files at runtime.")
+                self._set_failed("gdown missing; cannot download FAISS files.")
                 return
-
             try:
                 idx_url = f"https://drive.google.com/uc?id={self.DRIVE_INDEX_ID}"
                 meta_url = f"https://drive.google.com/uc?id={self.DRIVE_META_ID}"
 
                 if not self.index_path.exists():
-                    dbg(f"Downloading faiss.index from {idx_url} -> {self.index_path}")
-                    # gdown.download returns path str on success, or None/raises
-                    out = self.gdown.download(idx_url, str(self.index_path), quiet=False)
-                    dbg(f"gdown.download returned: {out}")
+                    logging.info(f"Downloading faiss.index from {idx_url}")
+                    self.gdown.download(idx_url, str(self.index_path), quiet=False)
 
                 if not self.meta_path.exists():
-                    dbg(f"Downloading docs_meta.pkl from {meta_url} -> {self.meta_path}")
-                    out2 = self.gdown.download(meta_url, str(self.meta_path), quiet=False)
-                    dbg(f"gdown.download returned: {out2}")
+                    logging.info(f"Downloading docs_meta.pkl from {meta_url}")
+                    self.gdown.download(meta_url, str(self.meta_path), quiet=False)
 
-                # sanity check sizes
-                if not self.index_path.exists():
-                    dbg("Download finished but faiss.index file still missing.")
-                    self._flush_debug()
-                    self._set_failed("faiss.index file missing after download attempt.")
-                    return
                 if self.index_path.stat().st_size < self.MIN_INDEX_BYTES:
-                    dbg(f"Downloaded faiss.index too small: {self.index_path.stat().st_size} bytes")
-                    self._flush_debug()
-                    self._set_failed("faiss.index download appears truncated or too small.")
-                    return
-
-                if not self.meta_path.exists():
-                    dbg("docs_meta.pkl missing after download.")
-                    self._flush_debug()
-                    self._set_failed("docs_meta.pkl missing after download attempt.")
-                    return
+                    raise RuntimeError(f"faiss.index too small: {self.index_path.stat().st_size}")
                 if self.meta_path.stat().st_size < self.MIN_META_BYTES:
-                    dbg(f"Downloaded docs_meta.pkl too small: {self.meta_path.stat().st_size} bytes")
-                    self._flush_debug()
-                    self._set_failed("docs_meta.pkl appears truncated or too small.")
-                    return
+                    raise RuntimeError(f"docs_meta.pkl too small: {self.meta_path.stat().st_size}")
 
-                dbg("Downloads completed and passed size checks.")
+                logging.info("Downloads completed successfully.")
             except Exception as e:
-                dbg(f"Exception during gdown download: {e}")
-                self._flush_debug()
+                logging.error(f"Download failed: {e}")
                 self._set_failed(f"gdown download failed: {e}")
                 return
 
-        # 3) load embedding model
+        # Load embedding model
         try:
-            dbg(f"Loading SentenceTransformer model: {self.model_name}")
+            logging.info(f"Loading SentenceTransformer model: {self.model_name}")
             self.model = SentenceTransformer(self.model_name)
-            dbg("SentenceTransformer loaded.")
+            logging.info("SentenceTransformer loaded successfully.")
         except Exception as e:
-            dbg(f"Failed to load SentenceTransformer model: {e}")
-            self._flush_debug()
+            logging.error(f"Model load failed: {e}")
             self._set_failed(f"Failed to load embedding model: {e}")
             return
 
-        # 4) load faiss index + docs metadata
+        # Load FAISS index + docs metadata
         try:
-            dbg(f"Reading FAISS index from {self.index_path} (size {self.index_path.stat().st_size})")
+            logging.info(f"Reading FAISS index from {self.index_path} (size {self.index_path.stat().st_size})")
             self.index = faiss.read_index(str(self.index_path))
-            dbg("faiss.read_index succeeded.")
-            dbg(f"Loading docs metadata from {self.meta_path}")
+            logging.info("faiss.read_index succeeded.")
             with open(self.meta_path, "rb") as f:
                 self.docs = pickle.load(f)
-            dbg(f"Loaded docs metadata: {len(self.docs)} entries (type={type(self.docs)})")
-            st.success(f"✅ Loaded FAISS index ({len(self.docs)} docs).")
-            self._flush_debug()
+            logging.info(f"Loaded docs metadata: {len(self.docs)} entries.")
         except Exception as e:
-            dbg(f"Failed to load FAISS index or metadata: {e}")
-            self._flush_debug()
+            logging.error(f"Failed to load FAISS index or metadata: {e}")
             self._set_failed(f"Failed to load FAISS index or metadata: {e}")
             return
 
+        logging.info("✅ FAISS index initialized successfully.")
+
     def _set_failed(self, msg):
         logging.error(msg)
-        try:
-            st.error(msg)
-        except Exception:
-            pass
         self.index = None
         self.docs = []
-
-    def _flush_debug(self):
-        # write debug lines to a log file so you can inspect after deployment
-        try:
-            log_path = self.index_dir / "download_debug.log"
-            with open(log_path, "a", encoding="utf-8") as fh:
-                fh.write("\n".join(self.debug_lines) + "\n")
-            logging.info(f"Wrote debug log to {log_path}")
-        except Exception as e:
-            logging.warning(f"Could not write debug log: {e}")
 
     def retrieve(self, query, top_k=5):
         if self.index is None:
@@ -205,9 +161,8 @@ class FaissRetriever:
         return results
 
 
-
+# -----------------------------------------------------------------
 def df_to_plot_png(df, title="Chart"):
-    # ... (this function remains the same) ...
     plt.figure(figsize=(8,4))
     numeric_cols = df.select_dtypes(include='number').columns
     if len(numeric_cols) >= 2:

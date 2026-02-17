@@ -1,6 +1,8 @@
 🧠 OlistIQ — GenAI Commerce Insight Agent  
 🌍 Conversational AI for E-Commerce Analytics
 
+[![Live Demo](https://img.shields.io/badge/Live-Demo-brightgreen)](https://jagadeeshwar45-tradelensai-srcstreamlit-app-mhm8sd.streamlit.app/)
+
 OlistIQ is a GenAI-driven conversational analytics agent built to explore and analyze the Brazilian Olist E-commerce dataset.  
 It combines LangChain, DuckDB, FAISS, and Google Generative AI to let users ask natural language questions and get data-driven, contextual, and multilingual insights — from SQL analytics to sentiment retrieval and real-time web lookups.
 
